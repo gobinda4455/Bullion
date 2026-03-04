@@ -165,8 +165,14 @@
         let isWithdrawLocked = urlParams.get('lw') === 'True';
         let isMaintenance = urlParams.get('maint') === 'True';
 
-        // 🟢 লোকাল ব্যান চেকিং (পুরোনো বাটন ব্লক করার জন্য)
         let isLocallyBanned = localStorage.getItem(`bull_banned_${userId}`) === 'true';
+
+        // 🟢 ম্যাজিক আনব্যান সিগন্যাল (Magic Unban)
+        if (urlParams.get('ub') === '1') {
+            localStorage.removeItem(`bull_banned_${userId}`);
+            isLocallyBanned = false;
+        }
+
         let isAutoBanned = isLocallyBanned;
 
         // 100% PERFECT SYNC SYSTEM
@@ -237,7 +243,6 @@
         updateBalanceUI(); 
 
         window.onload = () => {
-            // যদি আগেই লোকালি ব্যান থাকে, তাহলে প্রথমেই লক স্ক্রিন দেখাবে
             if (isLocallyBanned) {
                 showLockScreen("BANNED ⛔", "You have been permanently banned.");
             }
@@ -266,7 +271,7 @@
         }
 
         function switchTab(tabId) {
-            if (isLocallyBanned) return; // ব্যান থাকলে কোনো ট্যাবে যাওয়া যাবে না
+            if (isLocallyBanned) return; 
             if (tabId === 'tasks' && isTasksLocked) return showLockScreen("TASKS LOCKED", "Tasks section is currently locked.");
             if (tabId === 'withdraw' && isWithdrawLocked) return showLockScreen("WITHDRAW LOCKED", "Withdraw section is currently locked.");
             if (tabId === 'home' && isGameLocked) return showLockScreen("GAME LOCKED", "Game is currently locked.");
@@ -313,13 +318,12 @@
 
             if (energy <= 0) return;
             
-            // 🟢 অ্যান্টি-চিট সিস্টেম আপডেট (১ সেকেন্ডে ৮ বারের বেশি হলে ব্যান)
+            // 🟢 অ্যান্টি-চিট সিস্টেম আপডেট (১ সেকেন্ডে ১৫ বারের বেশি হলে ব্যান)
             let now = Date.now();
             if (now - lastClickTime < 1000) {
                 clickCount++;
-                if (clickCount > 8) { 
+                if (clickCount > 15) { 
                     isAutoBanned = true;
-                    // ব্যান হওয়ার বিষয়টা ফোনে সেভ করে রাখা হলো
                     localStorage.setItem(`bull_banned_${userId}`, 'true');
                     tg.openTelegramLink(`https://t.me/${botName}?start=autoban`);
                     showLockScreen("BANNED ⛔", "You have been banned for using an Auto-Clicker.");
