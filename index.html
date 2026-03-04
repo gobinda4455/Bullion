@@ -39,6 +39,7 @@
 
         .btn { background: linear-gradient(135deg, #f5a623 0%, #f76b1c 100%); color: white; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.3); }
         .btn:active { transform: scale(0.95); }
+        .btn:disabled { background: #4CAF50 !important; cursor: not-allowed; box-shadow: none; transform: none; opacity: 0.8; }
         .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); box-shadow: none; }
         
         .input-group { margin-bottom: 15px; }
@@ -106,7 +107,7 @@
                 <span class="card-title"><i class="fa-brands fa-telegram" style="color:#0088cc;"></i> Join Channel</span>
                 <span class="card-reward">+500 $BULL</span>
             </div>
-            <button class="btn" style="background:#0088cc;" onclick="tg.openTelegramLink('https://t.me/bullion_official')">Join</button>
+            <button class="btn" id="btn-tg" style="background:#0088cc;" onclick="completeTask('tg', 500, 'https://t.me/bullion_official')">Join</button>
         </div>
 
         <div class="card">
@@ -114,7 +115,7 @@
                 <span class="card-title"><i class="fa-brands fa-x-twitter" style="color:white;"></i> Follow X</span>
                 <span class="card-reward">+500 $BULL</span>
             </div>
-            <button class="btn" style="background:#1DA1F2;" onclick="tg.openLink('https://x.com/bullion_ofl')">Follow</button>
+            <button class="btn" id="btn-x" style="background:#1DA1F2;" onclick="completeTask('x', 500, 'https://x.com/bullion_ofl')">Follow</button>
         </div>
     </div>
 
@@ -176,6 +177,19 @@
         
         updateBalanceUI(); 
 
+        // 🟢 পেজ লোড হওয়ার সময় চেক করবে কোন টাস্কগুলো আগেই কমপ্লিট হয়েছে
+        window.onload = () => {
+            ['tg', 'x'].forEach(taskId => {
+                if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) {
+                    let btn = document.getElementById(`btn-${taskId}`);
+                    if(btn) {
+                        btn.innerText = "Completed ✅";
+                        btn.disabled = true;
+                    }
+                }
+            });
+        };
+
         if (isMaintenance) {
             showLockScreen("MAINTENANCE", "Game is under maintenance. Please check back later!");
         } else if (isGameLocked) {
@@ -206,6 +220,35 @@
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`);
         }
 
+        // 🟢 টাস্ক কমপ্লিট করার ফাংশন
+        function completeTask(taskId, reward, link) {
+            // হ্যাকিং চেক: যদি আগেই কমপ্লিট করা থাকে, তবে আর কয়েন দেবে না
+            if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) {
+                return;
+            }
+
+            // লিংক ওপেন করা
+            if (link.includes('t.me')) {
+                tg.openTelegramLink(link);
+            } else {
+                tg.openLink(link);
+            }
+
+            // ৩ সেকেন্ড পর কয়েন যোগ হবে (যাতে মনে হয় চেক হচ্ছে)
+            setTimeout(() => {
+                balance += reward;
+                updateBalanceUI();
+                localStorage.setItem(`bull_task_${taskId}_${userId}`, "completed");
+                
+                // বাটনের ডিজাইন চেঞ্জ করে লক করে দেওয়া
+                let btn = document.getElementById(`btn-${taskId}`);
+                btn.innerText = "Completed ✅";
+                btn.disabled = true;
+                
+                alert(`Task completed! You received +${reward} $BULL coins.`);
+            }, 3000);
+        }
+
         const tapArea = document.getElementById('tap-area-box');
 
         tapArea.addEventListener("click", (e) => {
@@ -216,7 +259,6 @@
                 clickCount++;
                 if (clickCount > 15) { 
                     isAutoBanned = true;
-                    // Auto-Ban হলে সরাসরি বটের কাছে ডাটা পাঠাবে
                     tg.openTelegramLink(`https://t.me/${botName}?start=autoban`);
                     showLockScreen("BANNED ⛔", "You have been banned for using an Auto-Clicker.");
                     setTimeout(() => tg.close(), 3000); 
@@ -243,8 +285,6 @@
             tapArea.appendChild(plusOne);
             
             setTimeout(() => { plusOne.remove(); }, 1000);
-            
-            // 🛑 আপডেট: ট্যাপ করার সময় গেম যেন বন্ধ না হয়, তার জন্য sendData রিমুভ করা হয়েছে।
         });
 
         document.getElementById("withdraw-btn").addEventListener("click", () => {
@@ -257,7 +297,6 @@
             }
             
             if(wallet !== "") {
-                // 🛑 ইনলাইন বাটন থেকে উইথড্র করার স্পেশাল ট্রিকস
                 let withdrawData = `w-${amount}-${wallet}`;
                 tg.openTelegramLink(`https://t.me/${botName}?start=${withdrawData}`);
                 
