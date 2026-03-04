@@ -3,843 +3,278 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>$BULL Tap-to-Earn</title>
+    <title>$BULL Premium Tap-to-Earn</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-        }
+        :root { --primary-color: #f5a623; --bg-color: #0f172a; --glass-bg: rgba(255, 255, 255, 0.05); --glass-border: rgba(255, 255, 255, 0.1); }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Poppins', sans-serif; user-select: none; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); background-image: radial-gradient(circle at 50% 0%, #1e293b 0%, #0f172a 100%); color: white; height: 100vh; overflow: hidden; display: flex; flex-direction: column; }
+        
+        .header { margin: 20px; padding: 15px 25px; background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px; display: flex; justify-content: center; align-items: center; box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3); z-index: 10; }
+        .balance-container { text-align: center; }
+        .balance-title { font-size: 12px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; }
+        .balance-amount { font-size: 32px; font-weight: 800; color: var(--primary-color); text-shadow: 0 0 15px rgba(245, 166, 35, 0.4); display: flex; align-items: center; justify-content: center; gap: 8px; }
+        .balance-amount img { width: 30px; height: 30px; }
 
-        body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            color: white;
-        }
+        .section { display: none; flex: 1; padding: 10px 20px; overflow-y: auto; padding-bottom: 100px; animation: fadeIn 0.3s ease-in-out; }
+        .active-section { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        #app {
-            width: 100%;
-            max-width: 400px;
-            height: 100vh;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            border-radius: 20px;
-            overflow: hidden;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.3);
-        }
+        .home-container { display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100%; }
+        .tap-area { position: relative; width: 280px; height: 280px; display: flex; justify-content: center; align-items: center; }
+        .tap-glow { position: absolute; width: 100%; height: 100%; background: radial-gradient(circle, rgba(245, 166, 35, 0.3) 0%, transparent 70%); border-radius: 50%; animation: pulseGlow 2s infinite; z-index: 1; }
+        .tap-image { width: 220px; height: 220px; border-radius: 50%; object-fit: cover; z-index: 2; cursor: pointer; transition: transform 0.1s cubic-bezier(0.4, 0, 0.2, 1); box-shadow: 0 10px 25px rgba(0,0,0,0.5), inset 0 0 20px rgba(255,255,255,0.2); border: 4px solid rgba(245, 166, 35, 0.3); }
+        .tap-image:active { transform: scale(0.92); }
+        @keyframes pulseGlow { 0% { transform: scale(0.95); opacity: 0.5; } 50% { transform: scale(1.1); opacity: 0.8; } 100% { transform: scale(0.95); opacity: 0.5; } }
 
-        /* Maintenance Overlay */
-        #maintenance-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: black;
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            flex-direction: column;
-            gap: 20px;
-        }
+        .floating-number { position: absolute; color: white; font-size: 24px; font-weight: bold; text-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 100; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
 
-        #maintenance-overlay.active {
-            display: flex;
-        }
+        .card { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
+        .card-info { display: flex; flex-direction: column; gap: 5px; }
+        .card-title { font-weight: 600; font-size: 16px; }
+        .card-reward { color: var(--primary-color); font-size: 14px; font-weight: 600; }
 
-        .maintenance-text {
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-            text-align: center;
-        }
+        .btn { background: linear-gradient(135deg, #f5a623 0%, #f76b1c 100%); color: white; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.3); }
+        .btn:active { transform: scale(0.95); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); box-shadow: none; }
+        
+        .input-group { margin-bottom: 15px; }
+        .input-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
+        .input-field { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 15px; border-radius: 12px; font-size: 16px; outline: none; transition: border 0.3s; }
+        .input-field:focus { border-color: var(--primary-color); }
+        .withdraw-form { background: var(--glass-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--glass-border); }
 
-        .maintenance-subtext {
-            font-size: 16px;
-            color: #888;
-            text-align: center;
-            padding: 0 20px;
-        }
+        .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 25px; display: flex; justify-content: space-around; padding: 10px 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 50; }
+        .nav-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 30%; transition: all 0.3s; padding: 8px 0; border-radius: 15px; }
+        .nav-btn i { font-size: 20px; margin-bottom: 2px; }
+        .nav-btn.active { color: white; background: rgba(255,255,255,0.1); }
+        .nav-btn.active i { color: var(--primary-color); }
 
-        /* Header */
-        .header {
-            padding: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: rgba(0, 0, 0, 0.2);
-        }
-
-        .balance {
-            background: rgba(255, 255, 255, 0.2);
-            padding: 10px 20px;
-            border-radius: 30px;
-            font-size: 18px;
-            font-weight: bold;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-
-        .balance::before {
-            content: '💰';
-            margin-right: 5px;
-        }
-
-        .user-id {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        /* Main Content Area */
-        .content {
-            flex: 1;
-            overflow-y: auto;
-            padding: 20px;
-        }
-
-        /* Home Tab */
-        .home-section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 30px;
-        }
-
-        .tap-area {
-            text-align: center;
-        }
-
-        .tap-image {
-            width: 200px;
-            height: 200px;
-            cursor: pointer;
-            transition: transform 0.1s ease;
-            animation: float 3s ease-in-out infinite;
-            border-radius: 50%;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-        }
-
-        .tap-image:active {
-            transform: scale(0.95);
-        }
-
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
-
-        .tap-stats {
-            text-align: center;
-        }
-
-        .tap-count {
-            font-size: 36px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .tap-multiplier {
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 15px;
-            border-radius: 20px;
-            font-size: 14px;
-        }
-
-        /* Tasks & Refer Tab */
-        .tasks-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .referral-box {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-        }
-
-        .referral-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-
-        .referral-link {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 12px;
-            border-radius: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 10px;
-            word-break: break-all;
-            font-size: 12px;
-        }
-
-        .copy-btn {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 8px 15px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 12px;
-            margin-left: 10px;
-            white-space: nowrap;
-        }
-
-        .referral-stats {
-            display: flex;
-            justify-content: space-around;
-            margin-top: 15px;
-        }
-
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-        }
-
-        .stat-label {
-            font-size: 12px;
-            opacity: 0.7;
-        }
-
-        .tasks-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-        }
-
-        .task-item {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: relative;
-        }
-
-        .task-item.locked {
-            opacity: 0.5;
-            pointer-events: none;
-        }
-
-        .task-lock {
-            position: absolute;
-            top: 10px;
-            right: 10px;
-            font-size: 18px;
-        }
-
-        .task-info {
-            flex: 1;
-        }
-
-        .task-name {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-
-        .task-reward {
-            font-size: 14px;
-            color: #FFD700;
-        }
-
-        .task-action {
-            background: #4CAF50;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-        }
-
-        .task-action.completed {
-            background: #808080;
+        #maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 1000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px; }
+        .lock-icon { font-size: 60px; color: #ef4444; margin-bottom: 20px; }
+        #lock-title { color: white; font-size: 28px; margin-bottom: 10px; font-weight: 800; }
+        #lock-desc { color: #94a3b8; font-size: 16px; }
+        
+        /* উইথড্র বক্সের জন্য স্পেশাল ডিজাইন যাতে বোঝা যায় এটা লক করা */
+        .auto-filled-box {
+            background: rgba(245, 166, 35, 0.1) !important;
+            color: var(--primary-color) !important;
+            font-weight: 800 !important;
+            border: 1px dashed var(--primary-color) !important;
             cursor: not-allowed;
-        }
-
-        /* Withdraw Tab */
-        .withdraw-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .withdraw-section.locked {
-            opacity: 0.5;
-            pointer-events: none;
-            position: relative;
-        }
-
-        .withdraw-section.locked::before {
-            content: '🔒';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            font-size: 48px;
-            z-index: 10;
-        }
-
-        .balance-info {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
             text-align: center;
-        }
-
-        .balance-amount {
-            font-size: 36px;
-            font-weight: bold;
-            margin: 10px 0;
-        }
-
-        .min-withdraw {
-            font-size: 14px;
-            opacity: 0.7;
-        }
-
-        .withdraw-form {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 15px;
-            padding: 20px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            font-size: 14px;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 10px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            font-size: 16px;
-        }
-
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .withdraw-btn {
-            width: 100%;
-            padding: 15px;
-            background: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
-            cursor: pointer;
-            transition: background 0.3s;
-        }
-
-        .withdraw-btn:hover {
-            background: #45a049;
-        }
-
-        .withdraw-btn:disabled {
-            background: #808080;
-            cursor: not-allowed;
-        }
-
-        /* Bottom Navigation */
-        .bottom-nav {
-            display: flex;
-            justify-content: space-around;
-            padding: 15px;
-            background: rgba(0, 0, 0, 0.3);
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .nav-item {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 5px;
-            cursor: pointer;
-            opacity: 0.6;
-            transition: opacity 0.3s;
-        }
-
-        .nav-item.active {
-            opacity: 1;
-        }
-
-        .nav-item.locked {
-            opacity: 0.3;
-            cursor: not-allowed;
-        }
-
-        .nav-icon {
-            font-size: 24px;
-        }
-
-        .nav-label {
-            font-size: 12px;
-        }
-
-        /* Notifications */
-        .notification {
-            position: fixed;
-            bottom: 100px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-size: 14px;
-            z-index: 1000;
-            animation: slideUp 0.3s ease;
-        }
-
-        @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translate(-50%, 20px);
-            }
-            to {
-                opacity: 1;
-                transform: translate(-50%, 0);
-            }
-        }
-
-        /* Loading */
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100%;
-            font-size: 18px;
-        }
-
-        .hidden {
-            display: none !important;
         }
     </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Maintenance Overlay -->
-        <div id="maintenance-overlay">
-            <div class="maintenance-text">🚧 Coming Soon</div>
-            <div class="maintenance-subtext">$BULL Tap-to-Earn is under maintenance. Please check back later!</div>
-        </div>
 
-        <!-- Header -->
-        <div class="header">
-            <div class="user-id" id="userId"></div>
-            <div class="balance" id="balance">0 $BULL</div>
-        </div>
+    <div id="maintenance-overlay">
+        <i class="fa-solid fa-lock lock-icon"></i>
+        <h1 id="lock-title">COMING SOON</h1>
+        <p id="lock-desc">This section is currently locked by Admin.</p>
+    </div>
 
-        <!-- Main Content -->
-        <div class="content" id="content">
-            <!-- Home Section -->
-            <div id="homeSection" class="home-section">
-                <div class="tap-area">
-                    <img src="https://i.ibb.co/SXnS7ftK/logo-imresizer.png" 
-                         alt="Tap to earn" 
-                         class="tap-image" 
-                         id="tapImage"
-                         onclick="handleTap()">
-                </div>
-                <div class="tap-stats">
-                    <div class="tap-count" id="tapCount">0</div>
-                    <div class="tap-multiplier">⚡ 1 $BULL per tap</div>
-                </div>
-            </div>
-
-            <!-- Tasks Section -->
-            <div id="tasksSection" class="tasks-section hidden">
-                <div class="referral-box">
-                    <div class="referral-title">🔗 Your Referral Link</div>
-                    <div style="display: flex; align-items: center;">
-                        <div class="referral-link" id="referralLink">Loading...</div>
-                        <button class="copy-btn" onclick="copyReferralLink()">Copy</button>
-                    </div>
-                    <div class="referral-stats">
-                        <div class="stat-item">
-                            <div class="stat-value" id="referralCount">0</div>
-                            <div class="stat-label">Referrals</div>
-                        </div>
-                        <div class="stat-item">
-                            <div class="stat-value" id="referralEarnings">0</div>
-                            <div class="stat-label">Earned</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tasks-list" id="tasksList">
-                    <!-- Tasks will be dynamically added here -->
-                </div>
-            </div>
-
-            <!-- Withdraw Section -->
-            <div id="withdrawSection" class="withdraw-section hidden">
-                <div class="balance-info">
-                    <div>Available Balance</div>
-                    <div class="balance-amount" id="withdrawBalance">0 $BULL</div>
-                    <div class="min-withdraw">Minimum withdrawal: 1000 $BULL</div>
-                </div>
-
-                <div class="withdraw-form">
-                    <div class="form-group">
-                        <label>Amount ($BULL)</label>
-                        <input type="number" id="withdrawAmount" placeholder="Enter amount" min="1000">
-                    </div>
-                    <div class="form-group">
-                        <label>TON Wallet Address</label>
-                        <input type="text" id="walletAddress" placeholder="Enter your TON wallet address">
-                    </div>
-                    <button class="withdraw-btn" onclick="requestWithdrawal()" id="withdrawBtn">Request Withdrawal</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom Navigation -->
-        <div class="bottom-nav">
-            <div class="nav-item active" onclick="switchTab('home')" id="navHome">
-                <span class="nav-icon">🏠</span>
-                <span class="nav-label">Home</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('tasks')" id="navTasks">
-                <span class="nav-icon">📋</span>
-                <span class="nav-label">Tasks & Refer</span>
-            </div>
-            <div class="nav-item" onclick="switchTab('withdraw')" id="navWithdraw">
-                <span class="nav-icon">💸</span>
-                <span class="nav-label">Withdraw</span>
+    <div class="header">
+        <div class="balance-container">
+            <div class="balance-title">Total Balance</div>
+            <div class="balance-amount">
+                <img src="https://i.ibb.co/SXnS7ftK/logo-imresizer.png" style="border-radius:50%" alt="coin"> 
+                <span id="balance">0</span>
             </div>
         </div>
     </div>
 
+    <div id="home" class="section active-section">
+        <div class="home-container">
+            <div class="tap-area" id="tap-area-box">
+                <div class="tap-glow"></div>
+                <img src="https://i.ibb.co/SXnS7ftK/logo-imresizer.png" class="tap-image" id="tap-btn" alt="BULL Logo">
+            </div>
+        </div>
+    </div>
+
+    <div id="tasks" class="section">
+        <h2 style="margin-bottom: 20px; font-weight: 800;">Earn More $BULL</h2>
+        
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title"><i class="fa-solid fa-user-plus" style="color:#f5a623;"></i> Invite Friends</span>
+                <span class="card-reward">+500 $BULL per invite</span>
+            </div>
+            <button class="btn btn-outline" onclick="shareRefLink()">Invite</button>
+        </div>
+
+        <h3 style="margin: 25px 0 15px 0; color: #94a3b8; font-size: 14px;">SOCIAL TASKS</h3>
+
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title"><i class="fa-brands fa-telegram" style="color:#0088cc;"></i> Join Channel</span>
+                <span class="card-reward">+500 $BULL</span>
+            </div>
+            <button class="btn" style="background:#0088cc;" onclick="tg.openTelegramLink('https://t.me/bullion_official')">Join</button>
+        </div>
+
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title"><i class="fa-brands fa-x-twitter" style="color:white;"></i> Follow X</span>
+                <span class="card-reward">+500 $BULL</span>
+            </div>
+            <button class="btn" style="background:#1DA1F2;" onclick="tg.openLink('https://x.com/bullion_ofl')">Follow</button>
+        </div>
+    </div>
+
+    <div id="withdraw" class="section">
+        <h2 style="margin-bottom: 20px; font-weight: 800;">Withdraw Tokens</h2>
+        <div class="withdraw-form">
+            <div class="input-group">
+                <label><i class="fa-solid fa-coins"></i> Amount to Withdraw (Auto-Selected)</label>
+                <input type="number" id="withdraw-amount" class="input-field auto-filled-box" readonly>
+            </div>
+            <div class="input-group">
+                <label><i class="fa-solid fa-wallet"></i> TON Wallet Address</label>
+                <input type="text" id="wallet-address" class="input-field" placeholder="EQA...">
+            </div>
+            <button class="btn" id="withdraw-btn" style="width: 100%; margin-top: 10px; padding: 15px; font-size: 16px;">
+                <i class="fa-solid fa-paper-plane"></i> Submit Request
+            </button>
+        </div>
+    </div>
+
+    <div class="bottom-nav">
+        <button class="nav-btn active" onclick="switchTab('home')"><i class="fa-solid fa-bolt"></i><span>Tap</span></button>
+        <button class="nav-btn" onclick="switchTab('tasks')"><i class="fa-solid fa-list-check"></i><span>Tasks</span></button>
+        <button class="nav-btn" onclick="switchTab('withdraw')"><i class="fa-solid fa-wallet"></i><span>Airdrop</span></button>
+    </div>
+
     <script>
-        // Initialize Telegram Web App
-        const tg = window.Telegram.WebApp;
+        let tg = window.Telegram.WebApp;
         tg.expand();
-        tg.enableClosingConfirmation();
+        tg.setHeaderColor('#0f172a');
+        tg.setBackgroundColor('#0f172a');
 
-        // Get user data from URL
         const urlParams = new URLSearchParams(window.location.search);
-        const userId = urlParams.get('user_id');
+        let userId = urlParams.get('user_id') || 'guest';
+        let botName = urlParams.get('bot');
+        let isGameLocked = urlParams.get('lg') === 'True';
+        let isTasksLocked = urlParams.get('lt') === 'True';
+        let isWithdrawLocked = urlParams.get('lw') === 'True';
+        let isMaintenance = urlParams.get('maint') === 'True';
+        
+        // --- COIN AUTO-SAVE LOGIC ---
+        let urlCoins = parseInt(urlParams.get('coins')) || 0;
+        let localCoins = parseInt(localStorage.getItem(`bull_coins_${userId}`)) || 0;
+        // লোকাল স্টোরেজ এবং বটের মধ্যে যেটা বেশি, ব্যালেন্স সেটাই ধরবে। ফলে গেম ক্লোজ করলেও কয়েন হারাবে না।
+        let balance = Math.max(urlCoins, localCoins);
+        
+        let isAutoBanned = false; 
+        let clickCount = 0;
+        let lastClickTime = Date.now();
 
-        // Game state
-        let coins = 0;
-        let tasks = [];
-        let completedTasks = [];
-        let referralLink = '';
-        let lockedFeatures = {
-            withdraw: false,
-            tasks: false,
-            game: false
-        };
-        let maintenanceMode = false;
-        let isBanned = false;
+        let balanceDisplay = document.getElementById("balance");
+        let withdrawAmountDisplay = document.getElementById("withdraw-amount");
 
-        // Initialize app
-        document.addEventListener('DOMContentLoaded', () => {
-            document.getElementById('userId').textContent = `ID: ${userId || 'Unknown'}`;
-            loadUserData();
+        // UI আপডেট করার স্পেশাল ফাংশন
+        function updateBalanceUI() {
+            balanceDisplay.innerText = balance;
+            withdrawAmountDisplay.value = balance; // উইথড্র বক্সে অটোমেটিক ব্যালেন্স বসে যাবে
+            localStorage.setItem(`bull_coins_${userId}`, balance); // ফোনে কয়েন সেভ করে রাখা
+        }
+        
+        updateBalanceUI(); // গেম ওপেন হলেই ব্যালেন্স আপডেট করে নেবে
+
+        if (isMaintenance) {
+            showLockScreen("MAINTENANCE", "Game is under maintenance. Please check back later!");
+        } else if (isGameLocked) {
+            showLockScreen("GAME LOCKED", "The game section is currently locked by Admin.");
+        }
+
+        function showLockScreen(title, desc) {
+            document.getElementById("maintenance-overlay").style.display = "flex";
+            document.getElementById("lock-title").innerText = title;
+            document.getElementById("lock-desc").innerText = desc;
+        }
+
+        function switchTab(tabId) {
+            if (tabId === 'tasks' && isTasksLocked) return showLockScreen("TASKS LOCKED", "Tasks section is currently locked.");
+            if (tabId === 'withdraw' && isWithdrawLocked) return showLockScreen("WITHDRAW LOCKED", "Withdraw section is currently locked.");
+            if (tabId === 'home' && isGameLocked) return showLockScreen("GAME LOCKED", "Game is currently locked.");
+            
+            document.getElementById("maintenance-overlay").style.display = "none";
+            document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(tabId).classList.add('active-section');
+            event.currentTarget.classList.add('active');
+        }
+
+        function shareRefLink() {
+            let refLink = `https://t.me/${botName}?start=${userId}`;
+            let text = `Play $BULL Game and earn tokens! Join using my link and get started.`;
+            tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`);
+        }
+
+        const tapArea = document.getElementById('tap-area-box');
+
+        tapArea.addEventListener("click", (e) => {
+            if(isGameLocked || isMaintenance || isAutoBanned) return;
+            
+            let now = Date.now();
+            if (now - lastClickTime < 1000) {
+                clickCount++;
+                if (clickCount > 15) { 
+                    isAutoBanned = true;
+                    tg.sendData(JSON.stringify({type: "auto_ban"}));
+                    showLockScreen("BANNED ⛔", "You have been banned for using an Auto-Clicker.");
+                    setTimeout(() => tg.close(), 3000); 
+                    return;
+                }
+            } else {
+                clickCount = 1;
+                lastClickTime = now;
+            }
+
+            balance++;
+            updateBalanceUI(); // এক ক্লিকেই উইথড্র বক্স এবং ফোন স্টোরেজ আপডেট হয়ে যাবে
+            if (navigator.vibrate) navigator.vibrate(50);
+            
+            const rect = tapArea.getBoundingClientRect();
+            let x = e.clientX ? (e.clientX - rect.left) : (rect.width/2);
+            let y = e.clientY ? (e.clientY - rect.top) : (rect.height/2);
+
+            const plusOne = document.createElement('div');
+            plusOne.classList.add('floating-number');
+            plusOne.innerText = '+1';
+            plusOne.style.left = `${x}px`;
+            plusOne.style.top = `${y}px`;
+            tapArea.appendChild(plusOne);
+            
+            setTimeout(() => { plusOne.remove(); }, 1000);
+            tg.sendData(JSON.stringify({type: "update_coins", coins: balance}));
         });
 
-        // Load user data from bot
-        function loadUserData() {
-            showNotification('Loading data...');
+        document.getElementById("withdraw-btn").addEventListener("click", () => {
+            let amount = parseInt(document.getElementById("withdraw-amount").value);
+            let wallet = document.getElementById("wallet-address").value;
             
-            // Send request to bot for user data
-            tg.sendData(JSON.stringify({
-                type: 'get_user_data',
-                user_id: userId
-            }));
-
-            // For demo purposes, simulate data load
-            setTimeout(() => {
-                // This would normally come from the bot
-                // Simulating data for now
-                coins = Math.floor(Math.random() * 5000);
-                tasks = [
-                    { id: 'task1', name: 'Join Telegram Channel', reward: 100, link: 'https://t.me/yourchannel' },
-                    { id: 'task2', name: 'Follow on Twitter', reward: 100, link: 'https://twitter.com/youraccount' },
-                    { id: 'task3', name: 'Subscribe to YouTube', reward: 200, link: 'https://youtube.com/yourchannel' }
-                ];
-                completedTasks = [];
-                referralLink = `https://t.me/YourBot?start=${userId}`;
+            if (amount < 1000) {
+                alert("Minimum withdrawal is 1000 $BULL.");
+                return;
+            }
+            
+            if(wallet !== "") {
+                tg.sendData(JSON.stringify({type: "withdrawal_request", amount: amount, address: wallet}));
                 
-                updateUI();
-                hideNotification();
-            }, 1000);
-        }
-
-        // Update UI with current state
-        function updateUI() {
-            // Update balances
-            document.getElementById('balance').textContent = `${coins} $BULL`;
-            document.getElementById('tapCount').textContent = `${coins} $BULL`;
-            document.getElementById('withdrawBalance').textContent = `${coins} $BULL`;
-            document.getElementById('referralLink').textContent = referralLink;
-
-            // Update tasks list
-            const tasksList = document.getElementById('tasksList');
-            tasksList.innerHTML = '';
-            
-            tasks.forEach(task => {
-                const isCompleted = completedTasks.includes(task.id);
-                const isLocked = lockedFeatures.tasks;
+                // উইথড্র করার পর ব্যালেন্স জিরো করে দেওয়া
+                balance = 0;
+                updateBalanceUI();
                 
-                const taskElement = document.createElement('div');
-                taskElement.className = `task-item ${isLocked ? 'locked' : ''}`;
-                taskElement.innerHTML = `
-                    ${isLocked ? '<span class="task-lock">🔒</span>' : ''}
-                    <div class="task-info">
-                        <div class="task-name">${task.name}</div>
-                        <div class="task-reward">+${task.reward} $BULL</div>
-                    </div>
-                    <button class="task-action ${isCompleted ? 'completed' : ''}" 
-                            onclick="completeTask('${task.id}', ${task.reward})"
-                            ${isCompleted || isLocked ? 'disabled' : ''}>
-                        ${isCompleted ? '✓ Completed' : 'Start'}
-                    </button>
-                `;
-                tasksList.appendChild(taskElement);
-            });
-
-            // Update lock status on navigation
-            updateNavLocks();
-
-            // Check maintenance mode
-            if (maintenanceMode) {
-                document.getElementById('maintenance-overlay').classList.add('active');
+                alert("Withdrawal request sent to admin!");
             } else {
-                document.getElementById('maintenance-overlay').classList.remove('active');
+                alert("Please enter your TON wallet address.");
             }
-
-            // Check if banned
-            if (isBanned) {
-                showNotification('⛔ You are banned from this game!', 5000);
-                setTimeout(() => {
-                    tg.close();
-                }, 3000);
-            }
-        }
-
-        // Update navigation locks
-        function updateNavLocks() {
-            const navHome = document.getElementById('navHome');
-            const navTasks = document.getElementById('navTasks');
-            const navWithdraw = document.getElementById('navWithdraw');
-
-            if (lockedFeatures.game) {
-                navHome.classList.add('locked');
-            } else {
-                navHome.classList.remove('locked');
-            }
-
-            if (lockedFeatures.tasks) {
-                navTasks.classList.add('locked');
-            } else {
-                navTasks.classList.remove('locked');
-            }
-
-            if (lockedFeatures.withdraw) {
-                navWithdraw.classList.add('locked');
-            } else {
-                navWithdraw.classList.remove('locked');
-            }
-        }
-
-        // Handle tap
-        function handleTap() {
-            if (lockedFeatures.game || maintenanceMode || isBanned) {
-                showNotification('🔒 Game is currently locked!');
-                return;
-            }
-
-            coins += 1;
-            updateUI();
-            
-            // Send update to bot
-            tg.sendData(JSON.stringify({
-                type: 'update_coins',
-                coins: coins
-            }));
-
-            // Visual feedback
-            const img = document.getElementById('tapImage');
-            img.style.transform = 'scale(0.9)';
-            setTimeout(() => {
-                img.style.transform = 'scale(1)';
-            }, 100);
-        }
-
-        // Switch tabs
-        function switchTab(tab) {
-            if (maintenanceMode || isBanned) {
-                showNotification('🔒 Game is under maintenance!');
-                return;
-            }
-
-            // Check if tab is locked
-            if (tab === 'tasks' && lockedFeatures.tasks) {
-                showNotification('🔒 Tasks section is locked!');
-                return;
-            }
-            if (tab === 'withdraw' && lockedFeatures.withdraw) {
-                showNotification('🔒 Withdraw section is locked!');
-                return;
-            }
-            if (tab === 'home' && lockedFeatures.game) {
-                showNotification('🔒 Game is locked!');
-                return;
-            }
-
-            // Hide all sections
-            document.getElementById('homeSection').classList.add('hidden');
-            document.getElementById('tasksSection').classList.add('hidden');
-            document.getElementById('withdrawSection').classList.add('hidden');
-
-            // Show selected section
-            document.getElementById(`${tab}Section`).classList.remove('hidden');
-
-            // Update navigation active state
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            document.getElementById(`nav${tab.charAt(0).toUpperCase() + tab.slice(1)}`).classList.add('active');
-        }
-
-        // Copy referral link
-        function copyReferralLink() {
-            navigator.clipboard.writeText(referralLink).then(() => {
-                showNotification('✅ Referral link copied!');
-            }).catch(() => {
-                showNotification('❌ Failed to copy link');
-            });
-        }
-
-        // Complete task
-        function completeTask(taskId, reward) {
-            if (lockedFeatures.tasks || maintenanceMode || isBanned) {
-                showNotification('🔒 Tasks are currently locked!');
-                return;
-            }
-
-            // Open task link
-            const task = tasks.find(t => t.id === taskId);
-            if (task && task.link) {
-                window.open(task.link, '_blank');
-            }
-
-            // Mark as completed
-            completedTasks.push(taskId);
-            coins += reward;
-            
-            updateUI();
-
-            // Send to bot
-            tg.sendData(JSON.stringify({
-                type: 'task_completed',
-                task_id: taskId,
-                reward: reward
-            }));
-
-            showNotification(`✅ Task completed! +${reward} $BULL`);
-        }
-
-        // Request withdrawal
-        function requestWithdrawal() {
-            if (lockedFeatures.withdraw || maintenanceMode || isBanned) {
-                showNotification('🔒 Withdrawals are currently locked!');
-                return;
-            }
-
-            const amount = parseInt(document.getElementById('withdrawAmount').value);
-            const address = document.getElementById('walletAddress').value;
-
-            if (!amount || amount < 1000) {
-                showNotification('❌ Minimum withdrawal is 1000 $BULL');
-                return;
-            }
-
-            if (!address) {
-                showNotification('❌ Please enter your TON wallet address');
-                return;
-            }
-
-            if (amount > coins) {
-                showNotification('❌ Insufficient balance');
-                return;
-            }
-
-            // Send withdrawal request to bot
-            tg.sendData(JSON.stringify({
-                type: 'withdrawal_request',
-                amount: amount,
-                address: address
-            }));
-
-            showNotification('✅ Withdrawal request sent!');
-            
-            // Clear form
-            document.getElementById('withdrawAmount').value = '';
-            document.getElementById('walletAddress').value = '';
-        }
-
-        // Show notification
-        function showNotification(message, duration = 2000) {
-            const notification = document.createElement('div');
-            notification.className = 'notification';
-            notification.textContent = message;
-            
-            document.getElementById('app').appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, duration);
-        }
-
-        function hideNotification() {
-            const notifications = document.querySelectorAll('.notification');
-            notifications.forEach(n => n.remove());
-        }
-
-        // Handle incoming data from bot (would be via Telegram.WebApp.onEvent)
-        tg.onEvent('mainButtonClicked', function() {
-            tg.sendData(JSON.stringify({
-                type: 'sync_data',
-                coins: coins,
-                completed_tasks: completedTasks
-            }));
         });
-
-        // Initialize
-        updateUI();
     </script>
 </body>
 </html>
