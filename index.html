@@ -158,10 +158,35 @@
         let isWithdrawLocked = urlParams.get('lw') === 'True';
         let isMaintenance = urlParams.get('maint') === 'True';
         
+        // ==========================================
+        // 🟢 100% PERFECT SYNC SYSTEM 🟢
+        // ==========================================
         let urlCoins = parseInt(urlParams.get('coins')) || 0;
         let localCoins = parseInt(localStorage.getItem(`bull_coins_${userId}`)) || 0;
-        let balance = Math.max(urlCoins, localCoins);
-        
+        let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${userId}`)) || 0;
+
+        // বট থেকে নতুন কয়েন আসলে (যেমন: রেফারেল বোনাস)
+        if (urlCoins > lastUrlCoins) {
+            let addedCoins = urlCoins - lastUrlCoins;
+            localCoins += addedCoins;
+            localStorage.setItem(`bull_last_url_coins_${userId}`, urlCoins);
+        } 
+        // বট থেকে কয়েন জিরো হয়ে গেলে (যেমন: উইথড্র করার পর)
+        else if (urlCoins < lastUrlCoins) {
+            if (urlCoins === 0) {
+                localCoins = 0; 
+            } else {
+                let deducted = lastUrlCoins - urlCoins;
+                localCoins -= deducted;
+                if(localCoins < 0) localCoins = 0;
+            }
+            localStorage.setItem(`bull_last_url_coins_${userId}`, urlCoins);
+        }
+
+        let balance = localCoins;
+        localStorage.setItem(`bull_coins_${userId}`, balance);
+        // ==========================================
+
         let isAutoBanned = false; 
         let clickCount = 0;
         let lastClickTime = Date.now();
@@ -177,7 +202,6 @@
         
         updateBalanceUI(); 
 
-        // 🟢 পেজ লোড হওয়ার সময় চেক করবে কোন টাস্কগুলো আগেই কমপ্লিট হয়েছে
         window.onload = () => {
             ['tg', 'x'].forEach(taskId => {
                 if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) {
@@ -220,27 +244,20 @@
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`);
         }
 
-        // 🟢 টাস্ক কমপ্লিট করার ফাংশন
         function completeTask(taskId, reward, link) {
-            // হ্যাকিং চেক: যদি আগেই কমপ্লিট করা থাকে, তবে আর কয়েন দেবে না
-            if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) {
-                return;
-            }
+            if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) return;
 
-            // লিংক ওপেন করা
             if (link.includes('t.me')) {
                 tg.openTelegramLink(link);
             } else {
                 tg.openLink(link);
             }
 
-            // ৩ সেকেন্ড পর কয়েন যোগ হবে (যাতে মনে হয় চেক হচ্ছে)
             setTimeout(() => {
                 balance += reward;
                 updateBalanceUI();
                 localStorage.setItem(`bull_task_${taskId}_${userId}`, "completed");
                 
-                // বাটনের ডিজাইন চেঞ্জ করে লক করে দেওয়া
                 let btn = document.getElementById(`btn-${taskId}`);
                 btn.innerText = "Completed ✅";
                 btn.disabled = true;
@@ -302,6 +319,9 @@
                 
                 balance = 0;
                 updateBalanceUI();
+                
+                // উইথড্র করার পর সিঙ্ক ডাটা জিরো করা হলো
+                localStorage.setItem(`bull_last_url_coins_${userId}`, 0);
             } else {
                 alert("Please enter your TON wallet address.");
             }
