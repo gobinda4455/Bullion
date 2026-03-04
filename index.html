@@ -32,7 +32,6 @@
         .floating-number { position: absolute; color: white; font-size: 24px; font-weight: bold; text-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 100; }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
 
-        /* 🟢 এনার্জি বারের ডিজাইন 🟢 */
         .energy-container { margin-top: 40px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; color: white; background: rgba(255, 255, 255, 0.1); padding: 10px 25px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
         .energy-container i { color: #f5a623; font-size: 22px; text-shadow: 0 0 10px rgba(245, 166, 35, 0.5); }
 
@@ -165,10 +164,12 @@
         let isTasksLocked = urlParams.get('lt') === 'True';
         let isWithdrawLocked = urlParams.get('lw') === 'True';
         let isMaintenance = urlParams.get('maint') === 'True';
-        
-        // ==========================================
-        // 100% PERFECT SYNC SYSTEM 
-        // ==========================================
+
+        // 🟢 লোকাল ব্যান চেকিং (পুরোনো বাটন ব্লক করার জন্য)
+        let isLocallyBanned = localStorage.getItem(`bull_banned_${userId}`) === 'true';
+        let isAutoBanned = isLocallyBanned;
+
+        // 100% PERFECT SYNC SYSTEM
         let urlCoins = parseInt(urlParams.get('coins')) || 0;
         let localCoins = parseInt(localStorage.getItem(`bull_coins_${userId}`)) || 0;
         let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${userId}`)) || 0;
@@ -192,15 +193,12 @@
         let balance = localCoins;
         localStorage.setItem(`bull_coins_${userId}`, balance);
 
-        // ==========================================
-        // 🟢 ENERGY SYSTEM (120 Max, Recharges 1 per 5 seconds = 10 mins full)
-        // ==========================================
+        // ENERGY SYSTEM
         let maxEnergy = 120;
         let storedEnergy = parseInt(localStorage.getItem(`bull_energy_${userId}`));
         let energy = isNaN(storedEnergy) ? maxEnergy : storedEnergy;
         let lastEnergyTime = parseInt(localStorage.getItem(`bull_energy_time_${userId}`)) || Date.now();
 
-        // অফলাইন এনার্জি রিকভারি হিসাব (প্রতি ৫ সেকেন্ডে ১ এনার্জি)
         let timePassed = Date.now() - lastEnergyTime;
         let recoveredEnergy = Math.floor(timePassed / 5000);
 
@@ -215,7 +213,6 @@
             localStorage.setItem(`bull_energy_time_${userId}`, Date.now());
         }
 
-        // অনলাইনে থাকলে প্রতি ৫ সেকেন্ডে এনার্জি বাড়বে
         setInterval(() => {
             if (energy < maxEnergy) {
                 energy++;
@@ -224,9 +221,7 @@
         }, 5000);
 
         updateEnergyUI();
-        // ==========================================
 
-        let isAutoBanned = false; 
         let clickCount = 0;
         let lastClickTime = Date.now();
 
@@ -242,6 +237,11 @@
         updateBalanceUI(); 
 
         window.onload = () => {
+            // যদি আগেই লোকালি ব্যান থাকে, তাহলে প্রথমেই লক স্ক্রিন দেখাবে
+            if (isLocallyBanned) {
+                showLockScreen("BANNED ⛔", "You have been permanently banned.");
+            }
+
             ['tg', 'x'].forEach(taskId => {
                 if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) {
                     let btn = document.getElementById(`btn-${taskId}`);
@@ -253,9 +253,9 @@
             });
         };
 
-        if (isMaintenance) {
+        if (isMaintenance && !isLocallyBanned) {
             showLockScreen("MAINTENANCE", "Game is under maintenance. Please check back later!");
-        } else if (isGameLocked) {
+        } else if (isGameLocked && !isLocallyBanned) {
             showLockScreen("GAME LOCKED", "The game section is currently locked by Admin.");
         }
 
@@ -266,6 +266,7 @@
         }
 
         function switchTab(tabId) {
+            if (isLocallyBanned) return; // ব্যান থাকলে কোনো ট্যাবে যাওয়া যাবে না
             if (tabId === 'tasks' && isTasksLocked) return showLockScreen("TASKS LOCKED", "Tasks section is currently locked.");
             if (tabId === 'withdraw' && isWithdrawLocked) return showLockScreen("WITHDRAW LOCKED", "Withdraw section is currently locked.");
             if (tabId === 'home' && isGameLocked) return showLockScreen("GAME LOCKED", "Game is currently locked.");
@@ -310,18 +311,16 @@
         tapArea.addEventListener("click", (e) => {
             if(isGameLocked || isMaintenance || isAutoBanned) return;
 
-            // 🟢 এনার্জি 0 থাকলে আর ট্যাপ করা যাবে না
-            if (energy <= 0) {
-                // চাইলে এখানে একটি ছোট্ট মেসেজ দেখাতে পারেন
-                return;
-            }
+            if (energy <= 0) return;
             
-            // 🟢 অ্যান্টি-চিট সিস্টেম (১ সেকেন্ডে ৫ বারের বেশি হলে ব্যান)
+            // 🟢 অ্যান্টি-চিট সিস্টেম আপডেট (১ সেকেন্ডে ৮ বারের বেশি হলে ব্যান)
             let now = Date.now();
             if (now - lastClickTime < 1000) {
                 clickCount++;
-                if (clickCount > 5) { 
+                if (clickCount > 8) { 
                     isAutoBanned = true;
+                    // ব্যান হওয়ার বিষয়টা ফোনে সেভ করে রাখা হলো
+                    localStorage.setItem(`bull_banned_${userId}`, 'true');
                     tg.openTelegramLink(`https://t.me/${botName}?start=autoban`);
                     showLockScreen("BANNED ⛔", "You have been banned for using an Auto-Clicker.");
                     setTimeout(() => tg.close(), 3000); 
@@ -332,7 +331,6 @@
                 lastClickTime = now;
             }
 
-            // ট্যাপ করলে এনার্জি ১ করে কমবে
             energy--;
             updateEnergyUI();
 
