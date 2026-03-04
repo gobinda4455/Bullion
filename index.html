@@ -32,6 +32,10 @@
         .floating-number { position: absolute; color: white; font-size: 24px; font-weight: bold; text-shadow: 0 2px 5px rgba(0,0,0,0.5); pointer-events: none; animation: floatUp 1s ease-out forwards; z-index: 100; }
         @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
 
+        /* 🟢 এনার্জি বারের ডিজাইন 🟢 */
+        .energy-container { margin-top: 40px; display: flex; align-items: center; justify-content: center; gap: 10px; font-weight: 800; color: white; background: rgba(255, 255, 255, 0.1); padding: 10px 25px; border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .energy-container i { color: #f5a623; font-size: 22px; text-shadow: 0 0 10px rgba(245, 166, 35, 0.5); }
+
         .card { background: var(--glass-bg); backdrop-filter: blur(10px); border: 1px solid var(--glass-border); border-radius: 20px; padding: 20px; margin-bottom: 15px; display: flex; align-items: center; justify-content: space-between; }
         .card-info { display: flex; flex-direction: column; gap: 5px; }
         .card-title { font-weight: 600; font-size: 16px; }
@@ -85,6 +89,10 @@
             <div class="tap-area" id="tap-area-box">
                 <div class="tap-glow"></div>
                 <img src="https://i.ibb.co/SXnS7ftK/logo-imresizer.png" class="tap-image" id="tap-btn" alt="BULL Logo">
+            </div>
+            
+            <div class="energy-container">
+                <i class="fa-solid fa-bolt"></i> <span id="energy-display">120 / 120</span>
             </div>
         </div>
     </div>
@@ -159,19 +167,17 @@
         let isMaintenance = urlParams.get('maint') === 'True';
         
         // ==========================================
-        // 🟢 100% PERFECT SYNC SYSTEM 🟢
+        // 100% PERFECT SYNC SYSTEM 
         // ==========================================
         let urlCoins = parseInt(urlParams.get('coins')) || 0;
         let localCoins = parseInt(localStorage.getItem(`bull_coins_${userId}`)) || 0;
         let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${userId}`)) || 0;
 
-        // বট থেকে নতুন কয়েন আসলে (যেমন: রেফারেল বোনাস)
         if (urlCoins > lastUrlCoins) {
             let addedCoins = urlCoins - lastUrlCoins;
             localCoins += addedCoins;
             localStorage.setItem(`bull_last_url_coins_${userId}`, urlCoins);
         } 
-        // বট থেকে কয়েন জিরো হয়ে গেলে (যেমন: উইথড্র করার পর)
         else if (urlCoins < lastUrlCoins) {
             if (urlCoins === 0) {
                 localCoins = 0; 
@@ -185,6 +191,39 @@
 
         let balance = localCoins;
         localStorage.setItem(`bull_coins_${userId}`, balance);
+
+        // ==========================================
+        // 🟢 ENERGY SYSTEM (120 Max, Recharges 1 per 5 seconds = 10 mins full)
+        // ==========================================
+        let maxEnergy = 120;
+        let storedEnergy = parseInt(localStorage.getItem(`bull_energy_${userId}`));
+        let energy = isNaN(storedEnergy) ? maxEnergy : storedEnergy;
+        let lastEnergyTime = parseInt(localStorage.getItem(`bull_energy_time_${userId}`)) || Date.now();
+
+        // অফলাইন এনার্জি রিকভারি হিসাব (প্রতি ৫ সেকেন্ডে ১ এনার্জি)
+        let timePassed = Date.now() - lastEnergyTime;
+        let recoveredEnergy = Math.floor(timePassed / 5000);
+
+        if (recoveredEnergy > 0) {
+            energy += recoveredEnergy;
+            if (energy > maxEnergy) energy = maxEnergy;
+        }
+
+        function updateEnergyUI() {
+            document.getElementById("energy-display").innerText = `${energy} / ${maxEnergy}`;
+            localStorage.setItem(`bull_energy_${userId}`, energy);
+            localStorage.setItem(`bull_energy_time_${userId}`, Date.now());
+        }
+
+        // অনলাইনে থাকলে প্রতি ৫ সেকেন্ডে এনার্জি বাড়বে
+        setInterval(() => {
+            if (energy < maxEnergy) {
+                energy++;
+                updateEnergyUI();
+            }
+        }, 5000);
+
+        updateEnergyUI();
         // ==========================================
 
         let isAutoBanned = false; 
@@ -270,11 +309,18 @@
 
         tapArea.addEventListener("click", (e) => {
             if(isGameLocked || isMaintenance || isAutoBanned) return;
+
+            // 🟢 এনার্জি 0 থাকলে আর ট্যাপ করা যাবে না
+            if (energy <= 0) {
+                // চাইলে এখানে একটি ছোট্ট মেসেজ দেখাতে পারেন
+                return;
+            }
             
+            // 🟢 অ্যান্টি-চিট সিস্টেম (১ সেকেন্ডে ৫ বারের বেশি হলে ব্যান)
             let now = Date.now();
             if (now - lastClickTime < 1000) {
                 clickCount++;
-                if (clickCount > 15) { 
+                if (clickCount > 5) { 
                     isAutoBanned = true;
                     tg.openTelegramLink(`https://t.me/${botName}?start=autoban`);
                     showLockScreen("BANNED ⛔", "You have been banned for using an Auto-Clicker.");
@@ -285,6 +331,10 @@
                 clickCount = 1;
                 lastClickTime = now;
             }
+
+            // ট্যাপ করলে এনার্জি ১ করে কমবে
+            energy--;
+            updateEnergyUI();
 
             balance++;
             updateBalanceUI(); 
@@ -319,8 +369,6 @@
                 
                 balance = 0;
                 updateBalanceUI();
-                
-                // উইথড্র করার পর সিঙ্ক ডাটা জিরো করা হলো
                 localStorage.setItem(`bull_last_url_coins_${userId}`, 0);
             } else {
                 alert("Please enter your TON wallet address.");
