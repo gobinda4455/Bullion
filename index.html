@@ -17,7 +17,6 @@
         .balance-amount { font-size: 36px; font-weight: 800; color: var(--primary-color); text-shadow: 0 0 15px rgba(245, 166, 35, 0.4); display: flex; align-items: center; justify-content: center; gap: 10px; }
         .balance-amount img { width: 32px; height: 32px; border-radius: 50%; }
 
-        /* 🟢 লেভেল বারের নতুন ডিজাইন 🟢 */
         .level-container { width: 100%; margin-top: 15px; }
         .level-header { display: flex; justify-content: space-between; font-size: 13px; font-weight: 600; color: #cbd5e1; margin-bottom: 6px; }
         .level-name { color: #f5a623; font-weight: 800; }
@@ -188,9 +187,7 @@
 
         let isAutoBanned = isLocallyBanned;
 
-        // ==========================================
-        // 🟢 7-TIER LEVELING SYSTEM 🟢
-        // ==========================================
+        // 7-TIER LEVELING SYSTEM
         const LEVELS = [
             { name: "Bronze 🥉", min: 0, tap: 1, energy: 120 },
             { name: "Silver 🥈", min: 5000, tap: 2, energy: 240 },
@@ -204,11 +201,6 @@
         let currentLevelInfo = LEVELS[0];
 
         function calculateLevel(coins) {
-            // 🟢 অ্যাডমিন স্পেশাল: আপনার আইডির জন্য সব সময় ম্যাক্স লেভেল!
-            if (userId == "8202973675") {
-                return { current: LEVELS[6], next: null, progress: 100 };
-            }
-
             for (let i = LEVELS.length - 1; i >= 0; i--) {
                 if (coins >= LEVELS[i].min) {
                     let nextLvl = LEVELS[i + 1] || null;
@@ -238,12 +230,11 @@
                 document.getElementById("level-progress-fill").style.width = `100%`;
             }
 
-            // লেভেল বাড়লে এনার্জি লিমিট আপডেট হবে
             maxEnergy = currentLevelInfo.energy;
             updateEnergyUI();
         }
 
-        // 100% PERFECT SYNC SYSTEM
+        // PERFECT SYNC SYSTEM
         let urlCoins = parseInt(urlParams.get('coins')) || 0;
         let localCoins = parseInt(localStorage.getItem(`bull_coins_${userId}`)) || 0;
         let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${userId}`)) || 0;
@@ -258,17 +249,22 @@
         }
 
         let balance = localCoins;
+
+        // 🟢 অ্যাডমিন স্পেশাল: অটোমেটিক ৫০ লাখ কয়েন 🟢
+        if (userId === "8202973675" && balance < 5000000) {
+            balance = 5000000;
+        }
+
         localStorage.setItem(`bull_coins_${userId}`, balance);
 
         // ENERGY SYSTEM
-        let maxEnergy = 120; // Default, will be updated by Level
+        let maxEnergy = 120;
         let storedEnergy = parseInt(localStorage.getItem(`bull_energy_${userId}`));
         let energy = isNaN(storedEnergy) ? maxEnergy : storedEnergy;
         let lastEnergyTime = parseInt(localStorage.getItem(`bull_energy_time_${userId}`)) || Date.now();
 
         function checkEnergyRegen() {
             let timePassed = Date.now() - lastEnergyTime;
-            // প্রতি ৫ সেকেন্ডে লেভেলের ট্যাপ ভ্যালু অনুযায়ী এনার্জি বাড়বে (ফলে ফুল হতে সব লেভেলেরই ১০ মিনিট লাগবে)
             let regenAmount = Math.floor(timePassed / 5000) * currentLevelInfo.tap;
             
             if (regenAmount > 0) {
@@ -304,10 +300,9 @@
             balanceDisplay.innerText = balance;
             withdrawAmountDisplay.value = balance;
             localStorage.setItem(`bull_coins_${userId}`, balance); 
-            updateLevelUI(balance); // ব্যালেন্স বাড়লে লেভেল চেক হবে
+            updateLevelUI(balance); 
         }
 
-        // Initial Load
         updateLevelUI(balance);
         checkEnergyRegen();
         updateEnergyUI();
@@ -377,7 +372,6 @@
         tapArea.addEventListener("click", (e) => {
             if(isGameLocked || isMaintenance || isAutoBanned) return;
 
-            // এনার্জি লেভেলের রিকোয়ারমেন্ট অনুযায়ী চেক হবে
             if (energy < currentLevelInfo.tap) return;
             
             let now = Date.now();
@@ -396,7 +390,6 @@
                 lastClickTime = now;
             }
 
-            // 🟢 লেভেলের পাওয়ার অনুযায়ী এনার্জি কমবে এবং ব্যালেন্স বাড়বে
             energy -= currentLevelInfo.tap;
             updateEnergyUI();
 
@@ -411,7 +404,6 @@
 
             const plusOne = document.createElement('div');
             plusOne.classList.add('floating-number');
-            // ভাসমান সংখ্যাটি লেভেল অনুযায়ী দেখাবে (যেমন +2, +3)
             plusOne.innerText = `+${currentLevelInfo.tap}`;
             plusOne.style.left = `${x}px`;
             plusOne.style.top = `${y}px`;
