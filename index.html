@@ -170,7 +170,9 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         let tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
-        let userId = (tgUser ? tgUser.id : null) || urlParams.get('user_id') || 'guest';
+        
+        // 🟢 আইডি টেক্সটে কনভার্ট করা হলো 
+        let currentUserId = String((tgUser ? tgUser.id : null) || urlParams.get('user_id') || 'guest');
         
         let botName = urlParams.get('bot') || "Billion_Bull_bot"; 
         let isGameLocked = urlParams.get('lg') === 'True';
@@ -178,14 +180,17 @@
         let isWithdrawLocked = urlParams.get('lw') === 'True';
         let isMaintenance = urlParams.get('maint') === 'True';
 
-        let isLocallyBanned = localStorage.getItem(`bull_banned_${userId}`) === 'true';
+        let isLocallyBanned = localStorage.getItem(`bull_banned_${currentUserId}`) === 'true';
 
         if (urlParams.get('ub') === '1') {
-            localStorage.removeItem(`bull_banned_${userId}`);
+            localStorage.removeItem(`bull_banned_${currentUserId}`);
             isLocallyBanned = false;
         }
 
         let isAutoBanned = isLocallyBanned;
+
+        // 🟢 সার্ভার থেকে অ্যাডমিন সিগন্যাল অথবা আপনার ডাইরেক্ট আইডি
+        let isAdmin = (currentUserId === "8202973675" || urlParams.get('admin') === '1');
 
         // 7-TIER LEVELING SYSTEM
         const LEVELS = [
@@ -201,6 +206,11 @@
         let currentLevelInfo = LEVELS[0];
 
         function calculateLevel(coins) {
+            // 🟢 অ্যাডমিন বাইপাস
+            if (isAdmin) {
+                return { current: LEVELS[6], next: null, progress: 100 };
+            }
+
             for (let i = LEVELS.length - 1; i >= 0; i--) {
                 if (coins >= LEVELS[i].min) {
                     let nextLvl = LEVELS[i + 1] || null;
@@ -231,37 +241,40 @@
             }
 
             maxEnergy = currentLevelInfo.energy;
-            updateEnergyUI();
         }
 
         // PERFECT SYNC SYSTEM
         let urlCoins = parseInt(urlParams.get('coins')) || 0;
-        let localCoins = parseInt(localStorage.getItem(`bull_coins_${userId}`)) || 0;
-        let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${userId}`)) || 0;
+        let localCoins = parseInt(localStorage.getItem(`bull_coins_${currentUserId}`)) || 0;
+        let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${currentUserId}`)) || 0;
 
         if (urlCoins > lastUrlCoins) {
             let addedCoins = urlCoins - lastUrlCoins;
             localCoins += addedCoins;
-            localStorage.setItem(`bull_last_url_coins_${userId}`, urlCoins);
+            localStorage.setItem(`bull_last_url_coins_${currentUserId}`, urlCoins);
         } else if (urlCoins < lastUrlCoins) {
             localCoins = (urlCoins === 0) ? 0 : Math.max(0, localCoins - (lastUrlCoins - urlCoins));
-            localStorage.setItem(`bull_last_url_coins_${userId}`, urlCoins);
+            localStorage.setItem(`bull_last_url_coins_${currentUserId}`, urlCoins);
+        }
+
+        // 🟢 অ্যাডমিন স্পেশাল: অটোমেটিক ৫০ লাখ কয়েন 🟢
+        if (isAdmin && localCoins < 5000000) {
+            localCoins = 5000000;
         }
 
         let balance = localCoins;
-
-        // 🟢 অ্যাডমিন স্পেশাল: অটোমেটিক ৫০ লাখ কয়েন (ফিক্সড) 🟢
-        if (userId == "8202973675" && balance < 5000000) {
-            balance = 5000000;
-        }
-
-        localStorage.setItem(`bull_coins_${userId}`, balance);
+        localStorage.setItem(`bull_coins_${currentUserId}`, balance);
 
         // ENERGY SYSTEM
-        let maxEnergy = 120;
-        let storedEnergy = parseInt(localStorage.getItem(`bull_energy_${userId}`));
+        let maxEnergy = isAdmin ? 840 : 120;
+        let storedEnergy = parseInt(localStorage.getItem(`bull_energy_${currentUserId}`));
         let energy = isNaN(storedEnergy) ? maxEnergy : storedEnergy;
-        let lastEnergyTime = parseInt(localStorage.getItem(`bull_energy_time_${userId}`)) || Date.now();
+        let lastEnergyTime = parseInt(localStorage.getItem(`bull_energy_time_${currentUserId}`)) || Date.now();
+
+        // 🟢 অ্যাডমিন হলে এনার্জি সবসময় ফুল থাকবে
+        if (isAdmin && energy < 840) {
+            energy = 840;
+        }
 
         function checkEnergyRegen() {
             let timePassed = Date.now() - lastEnergyTime;
@@ -277,8 +290,8 @@
         function updateEnergyUI() {
             if (energy > maxEnergy) energy = maxEnergy;
             document.getElementById("energy-display").innerText = `${energy} / ${maxEnergy}`;
-            localStorage.setItem(`bull_energy_${userId}`, energy);
-            localStorage.setItem(`bull_energy_time_${userId}`, lastEnergyTime);
+            localStorage.setItem(`bull_energy_${currentUserId}`, energy);
+            localStorage.setItem(`bull_energy_time_${currentUserId}`, lastEnergyTime);
         }
 
         setInterval(() => {
@@ -299,7 +312,7 @@
         function updateBalanceUI() {
             balanceDisplay.innerText = balance;
             withdrawAmountDisplay.value = balance;
-            localStorage.setItem(`bull_coins_${userId}`, balance); 
+            localStorage.setItem(`bull_coins_${currentUserId}`, balance); 
             updateLevelUI(balance); 
         }
 
@@ -313,7 +326,7 @@
                 showLockScreen("BANNED ⛔", "You have been permanently banned.");
             }
             ['tg', 'x'].forEach(taskId => {
-                if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) {
+                if (localStorage.getItem(`bull_task_${taskId}_${currentUserId}`)) {
                     let btn = document.getElementById(`btn-${taskId}`);
                     if(btn) { btn.innerText = "Completed ✅"; btn.disabled = true; }
                 }
@@ -346,20 +359,20 @@
         }
 
         function shareRefLink() {
-            let refLink = `https://t.me/${botName}?start=${userId}`;
+            let refLink = `https://t.me/${botName}?start=${currentUserId}`;
             let text = `Play $BULL Game and earn tokens! Join using my link and get started.`;
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`);
         }
 
         function completeTask(taskId, reward, link) {
-            if (localStorage.getItem(`bull_task_${taskId}_${userId}`)) return;
+            if (localStorage.getItem(`bull_task_${taskId}_${currentUserId}`)) return;
             if (link.includes('t.me')) tg.openTelegramLink(link);
             else tg.openLink(link);
 
             setTimeout(() => {
                 balance += reward;
                 updateBalanceUI();
-                localStorage.setItem(`bull_task_${taskId}_${userId}`, "completed");
+                localStorage.setItem(`bull_task_${taskId}_${currentUserId}`, "completed");
                 let btn = document.getElementById(`btn-${taskId}`);
                 btn.innerText = "Completed ✅";
                 btn.disabled = true;
@@ -379,7 +392,7 @@
                 clickCount++;
                 if (clickCount > 15) { 
                     isAutoBanned = true;
-                    localStorage.setItem(`bull_banned_${userId}`, 'true');
+                    localStorage.setItem(`bull_banned_${currentUserId}`, 'true');
                     tg.openTelegramLink(`https://t.me/${botName}?start=autoban`);
                     showLockScreen("BANNED ⛔", "You have been banned for using an Auto-Clicker.");
                     setTimeout(() => tg.close(), 3000); 
@@ -426,7 +439,7 @@
                 
                 balance = 0;
                 updateBalanceUI();
-                localStorage.setItem(`bull_last_url_coins_${userId}`, 0);
+                localStorage.setItem(`bull_last_url_coins_${currentUserId}`, 0);
             } else {
                 alert("Please enter your TON wallet address.");
             }
