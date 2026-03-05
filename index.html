@@ -57,20 +57,21 @@
         .input-field { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 15px; border-radius: 12px; font-size: 16px; outline: none; transition: border 0.3s; }
         .withdraw-form { background: var(--glass-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--glass-border); }
 
+        /* 🟢 Bottom Nav Z-Index Maintained at 50 🟢 */
         .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 25px; display: flex; justify-content: space-around; padding: 10px 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 50; }
         .nav-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 30%; transition: all 0.3s; padding: 8px 0; border-radius: 15px; }
         .nav-btn i { font-size: 20px; margin-bottom: 2px; }
         .nav-btn.active { color: white; background: rgba(255,255,255,0.1); }
         .nav-btn.active i { color: var(--primary-color); }
 
-        #maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 1000; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px; }
-        .lock-icon { font-size: 60px; color: #ef4444; margin-bottom: 20px; }
-        #lock-title { color: white; font-size: 28px; margin-bottom: 10px; font-weight: 800; }
-        #lock-desc { color: #94a3b8; font-size: 16px; }
+        /* 🟢 Maintenance Overlay Z-Index set to 45 (Below Nav Bar) 🟢 */
+        #maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 45; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px; padding-bottom: 80px; }
+        .lock-icon { font-size: 60px; color: #f5a623; margin-bottom: 20px; text-shadow: 0 0 15px rgba(245, 166, 35, 0.5); }
+        #lock-title { color: white; font-size: 28px; margin-bottom: 10px; font-weight: 800; letter-spacing: 2px;}
+        #lock-desc { color: #94a3b8; font-size: 14px; }
         
         .auto-filled-box { background: rgba(245, 166, 35, 0.1) !important; color: #94a3b8 !important; font-weight: 800 !important; cursor: not-allowed; text-align: center; }
         
-        /* Conversion UI styling */
         .conversion-box { background: rgba(245, 166, 35, 0.05); padding: 12px; border-radius: 10px; font-size: 13px; color: #cbd5e1; margin-bottom: 15px; text-align: center; border: 1px dashed var(--primary-color); }
         .converted-amount { color: #4CAF50 !important; border-color: #4CAF50 !important; font-size: 18px !important; }
 
@@ -80,9 +81,9 @@
 <body>
 
     <div id="maintenance-overlay">
-        <i class="fa-solid fa-lock lock-icon"></i>
+        <i class="fa-solid fa-clock lock-icon"></i>
         <h1 id="lock-title">COMING SOON</h1>
-        <p id="lock-desc">This section is currently locked by Admin.</p>
+        <p id="lock-desc">This section is currently locked.</p>
     </div>
 
     <div class="header">
@@ -209,9 +210,10 @@
         }
 
         let isAutoBanned = isLocallyBanned;
+        
+        // 🟢 ADMIN CHECK 🟢
         let isAdmin = (currentUserId === "8202973675" || urlParams.get('admin') === '1');
 
-        // TON CONNECT
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
             manifestUrl: 'https://gobinda4455.github.io/Bullion/tonconnect-manifest.json',
             buttonRootId: 'ton-connect'
@@ -344,7 +346,6 @@
                 rawBalanceInput.value = balance + " Coins";
             }
             
-            // 🟢 Calculate Real Tokens (100,000 coins = 5 tokens -> ratio is 0.00005)
             let realTokens = parseFloat((balance * 0.00005).toFixed(2));
             if(withdrawAmountInput) {
                 withdrawAmountInput.value = realTokens + " $BULL";
@@ -359,10 +360,21 @@
         updateEnergyUI();
         updateBalanceUI(); 
 
+        // 🟢 GLOBAL LOCK CHECK (Excluding Admin) 🟢
         window.onload = () => {
             if (isLocallyBanned) {
                 showLockScreen("BANNED ⛔", "You have been permanently banned.");
+                return;
             }
+            
+            if (!isAdmin) {
+                if (isMaintenance) {
+                    showLockScreen("COMING SOON", "Game is under maintenance.");
+                } else if (isGameLocked) {
+                    showLockScreen("COMING SOON", "The game section is currently locked.");
+                }
+            }
+
             ['tg', 'x'].forEach(taskId => {
                 if (localStorage.getItem(`bull_task_${taskId}_${currentUserId}`)) {
                     let btn = document.getElementById(`btn-${taskId}`);
@@ -371,29 +383,31 @@
             });
         };
 
-        if (isMaintenance && !isLocallyBanned) {
-            showLockScreen("MAINTENANCE", "Game is under maintenance. Please check back later!");
-        } else if (isGameLocked && !isLocallyBanned) {
-            showLockScreen("GAME LOCKED", "The game section is currently locked by Admin.");
-        }
-
         function showLockScreen(title, desc) {
             document.getElementById("maintenance-overlay").style.display = "flex";
             document.getElementById("lock-title").innerText = title;
             document.getElementById("lock-desc").innerText = desc;
         }
 
+        // 🟢 TAB SWITCH SYSTEM (Admin Bypass Included) 🟢
         function switchTab(tabId) {
             if (isLocallyBanned) return; 
-            if (tabId === 'tasks' && isTasksLocked) return showLockScreen("TASKS LOCKED", "Tasks section is currently locked.");
-            if (tabId === 'withdraw' && isWithdrawLocked) return showLockScreen("WITHDRAW LOCKED", "Withdraw section is currently locked.");
-            if (tabId === 'home' && isGameLocked) return showLockScreen("GAME LOCKED", "Game is currently locked.");
             
+            // সব সময় প্রথমে লক স্ক্রিন হাইড করবে
             document.getElementById("maintenance-overlay").style.display = "none";
+            
+            // ট্যাব চেঞ্জ করবে
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active-section');
             event.currentTarget.classList.add('active');
+
+            // সাধারণ ইউজারদের জন্য লক চেক করবে (Admin হলে স্কিপ করবে)
+            if (!isAdmin) {
+                if (tabId === 'tasks' && isTasksLocked) showLockScreen("COMING SOON", "Tasks section is currently locked.");
+                if (tabId === 'withdraw' && isWithdrawLocked) showLockScreen("COMING SOON", "Airdrop section is currently locked.");
+                if (tabId === 'home' && isGameLocked) showLockScreen("COMING SOON", "Game is currently locked.");
+            }
         }
 
         function shareRefLink() {
@@ -421,7 +435,9 @@
         const tapArea = document.getElementById('tap-area-box');
 
         tapArea.addEventListener("click", (e) => {
-            if(isGameLocked || isMaintenance || isAutoBanned) return;
+            if(isAutoBanned) return;
+            // 🟢 সাধারণ ইউজারের জন্য গেম লক থাকলে ট্যাপ বন্ধ থাকবে, কিন্তু অ্যাডমিন ট্যাপ করতে পারবে 🟢
+            if((isGameLocked || isMaintenance) && !isAdmin) return;
 
             if (energy < currentLevelInfo.tap) return;
             
@@ -463,7 +479,6 @@
             setTimeout(() => { plusOne.remove(); }, 1000);
         });
 
-        // 🟢 Withdraw System update with New Ratio
         document.getElementById("withdraw-btn").addEventListener("click", () => {
             let rawCoins = balance;
             let realTokens = parseFloat((balance * 0.00005).toFixed(2));
