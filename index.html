@@ -49,7 +49,10 @@
 
         .btn { background: linear-gradient(135deg, #f5a623 0%, #f76b1c 100%); color: white; border: none; padding: 12px 25px; border-radius: 12px; font-weight: 600; font-size: 14px; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; box-shadow: 0 4px 15px rgba(245, 166, 35, 0.3); }
         .btn:active { transform: scale(0.95); }
-        .btn:disabled { background: #4CAF50 !important; cursor: not-allowed; box-shadow: none; transform: none; opacity: 0.8; }
+        
+        /* 🟢 Updated Disabled Button Style for Grayed out look 🟢 */
+        .btn:disabled { background: rgba(255, 255, 255, 0.1) !important; color: #64748b !important; cursor: not-allowed; box-shadow: none; transform: none; border: 1px solid rgba(255, 255, 255, 0.1); }
+        
         .btn-outline { background: transparent; border: 1px solid var(--primary-color); color: var(--primary-color); box-shadow: none; }
         
         .input-group { margin-bottom: 15px; }
@@ -57,14 +60,12 @@
         .input-field { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 15px; border-radius: 12px; font-size: 16px; outline: none; transition: border 0.3s; }
         .withdraw-form { background: var(--glass-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--glass-border); }
 
-        /* 🟢 Bottom Nav Z-Index Maintained at 50 🟢 */
         .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 25px; display: flex; justify-content: space-around; padding: 10px 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 50; }
         .nav-btn { background: none; border: none; color: #64748b; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 5px; width: 30%; transition: all 0.3s; padding: 8px 0; border-radius: 15px; }
         .nav-btn i { font-size: 20px; margin-bottom: 2px; }
         .nav-btn.active { color: white; background: rgba(255,255,255,0.1); }
         .nav-btn.active i { color: var(--primary-color); }
 
-        /* 🟢 Maintenance Overlay Z-Index set to 45 (Below Nav Bar) 🟢 */
         #maintenance-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); z-index: 45; display: none; justify-content: center; align-items: center; flex-direction: column; text-align: center; padding: 20px; padding-bottom: 80px; }
         .lock-icon { font-size: 60px; color: #f5a623; margin-bottom: 20px; text-shadow: 0 0 15px rgba(245, 166, 35, 0.5); }
         #lock-title { color: white; font-size: 28px; margin-bottom: 10px; font-weight: 800; letter-spacing: 2px;}
@@ -118,22 +119,30 @@
     </div>
 
     <div id="tasks" class="section">
-        <h2 style="margin-bottom: 20px; font-weight: 800;">Earn More $BULL</h2>
+        <h2 style="margin-bottom: 20px; font-weight: 800;">Earn More Coins</h2>
         
+        <h3 style="margin: 10px 0 15px 0; color: #94a3b8; font-size: 14px;">DAILY REWARDS</h3>
+        <div class="card">
+            <div class="card-info">
+                <span class="card-title"><i class="fa-solid fa-calendar-check" style="color:#4CAF50;"></i> Daily Check-in</span>
+                <span class="card-reward">+1000 Coins</span>
+            </div>
+            <button class="btn" id="btn-daily" onclick="claimDaily()">Claim</button>
+        </div>
+
+        <h3 style="margin: 25px 0 15px 0; color: #94a3b8; font-size: 14px;">TASKS & INVITES</h3>
         <div class="card">
             <div class="card-info">
                 <span class="card-title"><i class="fa-solid fa-user-plus" style="color:#f5a623;"></i> Invite Friends</span>
-                <span class="card-reward">+500 $BULL per invite</span>
+                <span class="card-reward">+500 Coins per invite</span>
             </div>
             <button class="btn btn-outline" onclick="shareRefLink()">Invite</button>
         </div>
 
-        <h3 style="margin: 25px 0 15px 0; color: #94a3b8; font-size: 14px;">SOCIAL TASKS</h3>
-
         <div class="card">
             <div class="card-info">
                 <span class="card-title"><i class="fa-brands fa-telegram" style="color:#0088cc;"></i> Join Channel</span>
-                <span class="card-reward">+500 $BULL</span>
+                <span class="card-reward">+500 Coins</span>
             </div>
             <button class="btn" id="btn-tg" style="background:#0088cc;" onclick="completeTask('tg', 500, 'https://t.me/bullion_official')">Join</button>
         </div>
@@ -141,7 +150,7 @@
         <div class="card">
             <div class="card-info">
                 <span class="card-title"><i class="fa-brands fa-x-twitter" style="color:white;"></i> Follow X</span>
-                <span class="card-reward">+500 $BULL</span>
+                <span class="card-reward">+500 Coins</span>
             </div>
             <button class="btn" id="btn-x" style="background:#1DA1F2;" onclick="completeTask('x', 500, 'https://x.com/bullion_ofl')">Follow</button>
         </div>
@@ -174,7 +183,7 @@
                 <p id="connected-wallet-text" style="color: #4CAF50; font-size: 13px; font-weight: bold; margin-top: 10px; display: none;"></p>
             </div>
 
-            <button class="btn" id="withdraw-btn" style="width: 100%; margin-top: 15px; padding: 15px; font-size: 16px;">
+            <button class="btn" id="withdraw-btn" disabled style="width: 100%; margin-top: 15px; padding: 15px; font-size: 16px;">
                 <i class="fa-solid fa-paper-plane"></i> Submit Request
             </button>
         </div>
@@ -210,8 +219,6 @@
         }
 
         let isAutoBanned = isLocallyBanned;
-        
-        // 🟢 ADMIN CHECK 🟢
         let isAdmin = (currentUserId === "8202973675" || urlParams.get('admin') === '1');
 
         const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
@@ -219,15 +226,19 @@
             buttonRootId: 'ton-connect'
         });
 
+        // 🟢 UPDATED: Smart Submit Button Logic 🟢
         tonConnectUI.onStatusChange(wallet => {
+            let withdrawBtn = document.getElementById('withdraw-btn');
             if (wallet) {
                 let rawAddress = wallet.account.address;
                 document.getElementById('wallet-address').value = rawAddress;
                 document.getElementById('connected-wallet-text').style.display = "block";
                 document.getElementById('connected-wallet-text').innerText = "✅ Wallet Connected Successfully!";
+                if(withdrawBtn) withdrawBtn.disabled = false; // Enable button
             } else {
                 document.getElementById('wallet-address').value = "";
                 document.getElementById('connected-wallet-text').style.display = "none";
+                if(withdrawBtn) withdrawBtn.disabled = true; // Disable button
             }
         });
 
@@ -360,8 +371,9 @@
         updateEnergyUI();
         updateBalanceUI(); 
 
-        // 🟢 GLOBAL LOCK CHECK (Excluding Admin) 🟢
         window.onload = () => {
+            updateDailyButton(); // 🟢 Checks daily reward status
+
             if (isLocallyBanned) {
                 showLockScreen("BANNED ⛔", "You have been permanently banned.");
                 return;
@@ -375,10 +387,16 @@
                 }
             }
 
+            // Load completed tasks UI
             ['tg', 'x'].forEach(taskId => {
                 if (localStorage.getItem(`bull_task_${taskId}_${currentUserId}`)) {
                     let btn = document.getElementById(`btn-${taskId}`);
-                    if(btn) { btn.innerText = "Completed ✅"; btn.disabled = true; }
+                    if(btn) { 
+                        btn.innerText = "Completed ✅"; 
+                        btn.style.background = '#4CAF50';
+                        btn.style.color = 'white';
+                        btn.disabled = true; 
+                    }
                 }
             });
         };
@@ -389,20 +407,16 @@
             document.getElementById("lock-desc").innerText = desc;
         }
 
-        // 🟢 TAB SWITCH SYSTEM (Admin Bypass Included) 🟢
         function switchTab(tabId) {
             if (isLocallyBanned) return; 
             
-            // সব সময় প্রথমে লক স্ক্রিন হাইড করবে
             document.getElementById("maintenance-overlay").style.display = "none";
             
-            // ট্যাব চেঞ্জ করবে
             document.querySelectorAll('.section').forEach(sec => sec.classList.remove('active-section'));
             document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
             document.getElementById(tabId).classList.add('active-section');
             event.currentTarget.classList.add('active');
 
-            // সাধারণ ইউজারদের জন্য লক চেক করবে (Admin হলে স্কিপ করবে)
             if (!isAdmin) {
                 if (tabId === 'tasks' && isTasksLocked) showLockScreen("COMING SOON", "Tasks section is currently locked.");
                 if (tabId === 'withdraw' && isWithdrawLocked) showLockScreen("COMING SOON", "Airdrop section is currently locked.");
@@ -416,6 +430,40 @@
             tg.openTelegramLink(`https://t.me/share/url?url=${encodeURIComponent(refLink)}&text=${encodeURIComponent(text)}`);
         }
 
+        // 🟢 NEW: Daily Check-in Logic 🟢
+        function claimDaily() {
+            let lastClaim = parseInt(localStorage.getItem(`bull_daily_${currentUserId}`)) || 0;
+            let now = Date.now();
+            
+            // 86400000 ms = 24 Hours
+            if (now - lastClaim >= 86400000) {
+                balance += 1000;
+                updateBalanceUI();
+                localStorage.setItem(`bull_daily_${currentUserId}`, now);
+                updateDailyButton();
+                alert("Awesome! You received +1000 Game Coins for your daily login.");
+            } else {
+                alert("You have already claimed your daily reward. Come back tomorrow!");
+            }
+        }
+
+        function updateDailyButton() {
+            let lastClaim = parseInt(localStorage.getItem(`bull_daily_${currentUserId}`)) || 0;
+            let btn = document.getElementById('btn-daily');
+            if(!btn) return;
+
+            if (Date.now() - lastClaim < 86400000) {
+                btn.innerText = "Claimed ✅";
+                btn.style.background = '#4CAF50';
+                btn.style.color = 'white';
+                btn.disabled = true;
+            } else {
+                btn.innerText = "Claim";
+                btn.style.background = ''; 
+                btn.disabled = false;
+            }
+        }
+
         function completeTask(taskId, reward, link) {
             if (localStorage.getItem(`bull_task_${taskId}_${currentUserId}`)) return;
             if (link.includes('t.me')) tg.openTelegramLink(link);
@@ -426,8 +474,13 @@
                 updateBalanceUI();
                 localStorage.setItem(`bull_task_${taskId}_${currentUserId}`, "completed");
                 let btn = document.getElementById(`btn-${taskId}`);
+                
+                // Keep the green success look
                 btn.innerText = "Completed ✅";
+                btn.style.background = '#4CAF50';
+                btn.style.color = 'white';
                 btn.disabled = true;
+                
                 alert(`Task completed! You received +${reward} Game Coins.`);
             }, 3000);
         }
@@ -436,7 +489,6 @@
 
         tapArea.addEventListener("click", (e) => {
             if(isAutoBanned) return;
-            // 🟢 সাধারণ ইউজারের জন্য গেম লক থাকলে ট্যাপ বন্ধ থাকবে, কিন্তু অ্যাডমিন ট্যাপ করতে পারবে 🟢
             if((isGameLocked || isMaintenance) && !isAdmin) return;
 
             if (energy < currentLevelInfo.tap) return;
