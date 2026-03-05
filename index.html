@@ -153,7 +153,7 @@
             <div class="conversion-box">
                 <i class="fa-solid fa-exchange-alt" style="color: var(--primary-color);"></i> 
                 <strong>Conversion Rate:</strong><br>
-                100,000 Game Coins = 30 $BULL Airdrop Tokens
+                100,000 Game Coins = 5 $BULL Airdrop Tokens
             </div>
 
             <div class="input-group">
@@ -340,13 +340,12 @@
         function updateBalanceUI() {
             balanceDisplay.innerText = balance;
             
-            // 🟢 Update raw coins input
             if(rawBalanceInput) {
                 rawBalanceInput.value = balance + " Coins";
             }
             
-            // 🟢 Calculate Real Tokens (100,000 coins = 30 tokens -> ratio is 0.0003)
-            let realTokens = parseFloat((balance * 0.0003).toFixed(2));
+            // 🟢 Calculate Real Tokens (100,000 coins = 5 tokens -> ratio is 0.00005)
+            let realTokens = parseFloat((balance * 0.00005).toFixed(2));
             if(withdrawAmountInput) {
                 withdrawAmountInput.value = realTokens + " $BULL";
             }
@@ -464,15 +463,14 @@
             setTimeout(() => { plusOne.remove(); }, 1000);
         });
 
-        // 🟢 Withdraw System update with Pop-up Confirmation
+        // 🟢 Withdraw System update with New Ratio
         document.getElementById("withdraw-btn").addEventListener("click", () => {
             let rawCoins = balance;
-            let realTokens = parseFloat((balance * 0.0003).toFixed(2));
+            let realTokens = parseFloat((balance * 0.00005).toFixed(2));
             let wallet = document.getElementById("wallet-address").value;
             
-            // 🟢 ১ লাখ কয়েন না হলে উইথড্র হবে না
             if (rawCoins < 100000) {
-                alert("Minimum withdrawal is 100,000 Coins (30 $BULL Tokens). Keep tapping!");
+                alert("Minimum withdrawal is 100,000 Coins (5 $BULL Tokens). Keep tapping!");
                 return;
             }
             
@@ -481,15 +479,13 @@
                 return;
             }
             
-            // 🟢 পপ-আপ মেসেজে বিস্তারিত হিসাব বোঝানো
             let confirmMsg = `📊 CONVERSION DETAILS:\n\n` + 
                              `Total Game Coins: ${rawCoins}\n` +
-                             `Rate: 100,000 Coins = 30 $BULL\n\n` +
+                             `Rate: 100,000 Coins = 5 $BULL\n\n` +
                              `🎁 You will receive: ${realTokens} Airdrop Tokens\n\n` +
                              `Do you want to send this withdrawal request?`;
             
             if (confirm(confirmMsg)) {
-                // 🟢 শুধুমাত্র কনভার্ট হওয়া আসল টোকেনটাই অ্যাডমিনের কাছে পাঠানো হবে
                 let withdrawData = `w-${realTokens}-${wallet}`;
                 tg.openTelegramLink(`https://t.me/${botName}?start=${withdrawData}`);
                 
