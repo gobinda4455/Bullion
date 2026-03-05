@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>$BULL Premium Tap-to-Earn</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+    
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
@@ -53,7 +55,6 @@
         .input-group { margin-bottom: 15px; }
         .input-group label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
         .input-field { width: 100%; background: rgba(0,0,0,0.3); border: 1px solid var(--glass-border); color: white; padding: 15px; border-radius: 12px; font-size: 16px; outline: none; transition: border 0.3s; }
-        .input-field:focus { border-color: var(--primary-color); }
         .withdraw-form { background: var(--glass-bg); padding: 25px; border-radius: 20px; border: 1px solid var(--glass-border); }
 
         .bottom-nav { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 350px; background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(15px); border: 1px solid var(--glass-border); border-radius: 25px; display: flex; justify-content: space-around; padding: 10px 5px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); z-index: 50; }
@@ -68,6 +69,9 @@
         #lock-desc { color: #94a3b8; font-size: 16px; }
         
         .auto-filled-box { background: rgba(245, 166, 35, 0.1) !important; color: var(--primary-color) !important; font-weight: 800 !important; border: 1px dashed var(--primary-color) !important; cursor: not-allowed; text-align: center; }
+        
+        /* TON Connect Button Container Styling */
+        #ton-connect { display: flex; justify-content: center; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -146,10 +150,15 @@
                 <label><i class="fa-solid fa-coins"></i> Amount to Withdraw</label>
                 <input type="number" id="withdraw-amount" class="input-field auto-filled-box" readonly>
             </div>
-            <div class="input-group">
-                <label><i class="fa-solid fa-wallet"></i> TON Wallet Address</label>
-                <input type="text" id="wallet-address" class="input-field" placeholder="EQA...">
+            
+            <div class="input-group" style="text-align: center;">
+                <label><i class="fa-solid fa-wallet"></i> Connect TON Wallet</label>
+                <div id="ton-connect"></div>
+                
+                <input type="hidden" id="wallet-address" value="">
+                <p id="connected-wallet-text" style="color: #4CAF50; font-size: 13px; font-weight: bold; margin-top: 10px; display: none;"></p>
             </div>
+
             <button class="btn" id="withdraw-btn" style="width: 100%; margin-top: 10px; padding: 15px; font-size: 16px;">
                 <i class="fa-solid fa-paper-plane"></i> Submit Request
             </button>
@@ -170,8 +179,6 @@
 
         const urlParams = new URLSearchParams(window.location.search);
         let tgUser = tg.initDataUnsafe && tg.initDataUnsafe.user ? tg.initDataUnsafe.user : null;
-        
-        // 🟢 আইডি টেক্সটে কনভার্ট করা হলো 
         let currentUserId = String((tgUser ? tgUser.id : null) || urlParams.get('user_id') || 'guest');
         
         let botName = urlParams.get('bot') || "Billion_Bull_bot"; 
@@ -188,9 +195,30 @@
         }
 
         let isAutoBanned = isLocallyBanned;
-
-        // 🟢 সার্ভার থেকে অ্যাডমিন সিগন্যাল অথবা আপনার ডাইরেক্ট আইডি
         let isAdmin = (currentUserId === "8202973675" || urlParams.get('admin') === '1');
+
+        // ==========================================
+        // 🟢 TON CONNECT INITIALIZATION
+        // ==========================================
+        const tonConnectUI = new TON_CONNECT_UI.TonConnectUI({
+            manifestUrl: 'https://gobinda4455.github.io/Bullion/tonconnect-manifest.json',
+            buttonRootId: 'ton-connect'
+        });
+
+        // Listen for connection status changes
+        tonConnectUI.onStatusChange(wallet => {
+            if (wallet) {
+                // Wallet is connected
+                let rawAddress = wallet.account.address;
+                document.getElementById('wallet-address').value = rawAddress;
+                document.getElementById('connected-wallet-text').style.display = "block";
+                document.getElementById('connected-wallet-text').innerText = "✅ Wallet Connected Successfully!";
+            } else {
+                // Wallet is disconnected
+                document.getElementById('wallet-address').value = "";
+                document.getElementById('connected-wallet-text').style.display = "none";
+            }
+        });
 
         // 7-TIER LEVELING SYSTEM
         const LEVELS = [
@@ -206,10 +234,7 @@
         let currentLevelInfo = LEVELS[0];
 
         function calculateLevel(coins) {
-            // 🟢 অ্যাডমিন বাইপাস
-            if (isAdmin) {
-                return { current: LEVELS[6], next: null, progress: 100 };
-            }
+            if (isAdmin) return { current: LEVELS[6], next: null, progress: 100 };
 
             for (let i = LEVELS.length - 1; i >= 0; i--) {
                 if (coins >= LEVELS[i].min) {
@@ -239,11 +264,9 @@
                 document.getElementById("level-progress-text").innerText = "MAX LEVEL";
                 document.getElementById("level-progress-fill").style.width = `100%`;
             }
-
             maxEnergy = currentLevelInfo.energy;
         }
 
-        // PERFECT SYNC SYSTEM
         let urlCoins = parseInt(urlParams.get('coins')) || 0;
         let localCoins = parseInt(localStorage.getItem(`bull_coins_${currentUserId}`)) || 0;
         let lastUrlCoins = parseInt(localStorage.getItem(`bull_last_url_coins_${currentUserId}`)) || 0;
@@ -257,7 +280,6 @@
             localStorage.setItem(`bull_last_url_coins_${currentUserId}`, urlCoins);
         }
 
-        // 🟢 অ্যাডমিন স্পেশাল: অটোমেটিক ৫০ লাখ কয়েন 🟢
         if (isAdmin && localCoins < 5000000) {
             localCoins = 5000000;
         }
@@ -271,7 +293,6 @@
         let energy = isNaN(storedEnergy) ? maxEnergy : storedEnergy;
         let lastEnergyTime = parseInt(localStorage.getItem(`bull_energy_time_${currentUserId}`)) || Date.now();
 
-        // 🟢 অ্যাডমিন হলে এনার্জি সবসময় ফুল থাকবে
         if (isAdmin && energy < 840) {
             energy = 840;
         }
@@ -279,7 +300,6 @@
         function checkEnergyRegen() {
             let timePassed = Date.now() - lastEnergyTime;
             let regenAmount = Math.floor(timePassed / 5000) * currentLevelInfo.tap;
-            
             if (regenAmount > 0) {
                 energy += regenAmount;
                 if (energy > maxEnergy) energy = maxEnergy;
@@ -425,6 +445,7 @@
             setTimeout(() => { plusOne.remove(); }, 1000);
         });
 
+        // 🟢 Withdraw System with Wallet Check
         document.getElementById("withdraw-btn").addEventListener("click", () => {
             let amount = parseInt(document.getElementById("withdraw-amount").value);
             let wallet = document.getElementById("wallet-address").value;
@@ -433,6 +454,13 @@
                 alert("Minimum withdrawal is 1000 $BULL.");
                 return;
             }
+            
+            // 🟢 Check if wallet is connected
+            if (!tonConnectUI.connected) {
+                alert("Please connect your TON wallet first using the Connect Wallet button.");
+                return;
+            }
+            
             if(wallet !== "") {
                 let withdrawData = `w-${amount}-${wallet}`;
                 tg.openTelegramLink(`https://t.me/${botName}?start=${withdrawData}`);
@@ -440,8 +468,6 @@
                 balance = 0;
                 updateBalanceUI();
                 localStorage.setItem(`bull_last_url_coins_${currentUserId}`, 0);
-            } else {
-                alert("Please enter your TON wallet address.");
             }
         });
     </script>
